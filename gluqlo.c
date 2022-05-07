@@ -250,8 +250,6 @@ void render_clock(int maxsteps, int step) {
 
 	time(&rawtime);
 	_time = localtime(&rawtime);
-    _time->tm_hour = 14;
-    _time->tm_min = 16;
 
 	// draw hours
 	if(_time->tm_hour != past_h) {
