@@ -143,7 +143,7 @@ void render_ampm(SDL_Surface *surface, SDL_Rect *rect, int pm) {
 
 void blit_digits(SDL_Surface *surface, SDL_Rect *rect, int spc, char digits[], SDL_Color color) {
 	int min_x, max_x, min_y, max_y, advance;
-	int adjust_x = (digits[0] == '1') ? 2.5 * spc : 0; // special case
+	int adjust_x = (digits[0] == '1') ? 6 * spc : 0; // special case
 	int center_x = rect->x + rect->w / 2 - adjust_x;
 
 	SDL_Surface *glyph;
@@ -161,7 +161,7 @@ void blit_digits(SDL_Surface *surface, SDL_Rect *rect, int spc, char digits[], S
 		TTF_GlyphMetrics(font_time, digits[1], &min_x, &max_x, &min_y, &max_y, &advance);
 		glyph = TTF_RenderGlyph_Blended(font_time, digits[1], color);
 		coords.y = rect->y + (rect->h - glyph->h) / 2;
-		coords.x = center_x + spc / 2;
+		coords.x = center_x + spc / 2 + (adjust_x / 2);
 		SDL_BlitSurface(glyph, 0, surface, &coords);
 		SDL_FreeSurface(glyph);
 	} else {
@@ -250,6 +250,8 @@ void render_clock(int maxsteps, int step) {
 
 	time(&rawtime);
 	_time = localtime(&rawtime);
+    _time->tm_hour = 14;
+    _time->tm_min = 16;
 
 	// draw hours
 	if(_time->tm_hour != past_h) {
