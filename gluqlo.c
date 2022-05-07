@@ -26,8 +26,8 @@
 #include "SDL.h"
 #include "SDL_ttf.h"
 #include "SDL_syswm.h"
-#include "SDL_gfxPrimitives.h"
-#include "SDL_rotozoom.h"
+#include "SDL2_gfxPrimitives.h"
+#include "SDL2_rotozoom.h"
 
 #ifndef FONT
 #define FONT "/usr/share/gluqlo/gluqlo.ttf"
@@ -51,10 +51,13 @@ int height = DEFAULT_HEIGHT;
 TTF_Font *font_time = NULL;
 TTF_Font *font_mode = NULL;
 
-const SDL_Color FONT_COLOR = { 0xb7, 0xb7, 0xb7 };
-const SDL_Color BACKGROUND_COLOR = { 0x0f, 0x0f, 0x0f };
+const SDL_Color FONT_COLOR = { 0xb7, 0xb7, 0xb7, 0xff };
+const SDL_Color BACKGROUND_COLOR = { 0x0f, 0x0f, 0x0f, 0xff };
 
 SDL_Surface *screen;
+SDL_Window *window;
+SDL_Renderer *renderer;
+SDL_Texture *texture;
 
 SDL_Rect hourBackground;
 SDL_Rect minBackground;
@@ -65,7 +68,7 @@ SDL_Surface *bg;
 // draw rounded box
 // see http://lists.libsdl.org/pipermail/sdl-libsdl.org/2006-December/058868.html
 void fill_rounded_box_b(SDL_Surface* dst, SDL_Rect *coords, int r, SDL_Color color) {
-	Uint32 pixcolor = SDL_MapRGB(dst->format, color.r, color.g, color.b);
+	Uint32 pixcolor = SDL_MapRGBA(dst->format, color.r, color.g, color.b, color.a);
 
 	int i, j;
 	int rpsqrt2 = (int) (r / sqrt(2));
@@ -202,6 +205,7 @@ void render_digits(SDL_Surface *surface, SDL_Rect *background, char digits[], ch
 		c = 0xb7 * ((1.0 * step) - halfsteps + 1) / halfsteps;
 	}
 	color.r = color.g = color.b = c;
+	color.a = 0xff;
 
 	// create surface to scale from filled background surface
 	SDL_Surface *bgcopy = SDL_ConvertSurface(bg, bg->format, bg->flags);
@@ -233,10 +237,10 @@ void render_digits(SDL_Surface *surface, SDL_Rect *background, char digits[], ch
 	rect.w = background->w;
 	rect.x = background->x;
 	rect.y = background->y + (background->h - rect.h) / 2;
-	SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, 0, 0, 0));
+	SDL_FillRect(surface, &rect, SDL_MapRGBA(surface->format, 0, 0, 0, 0xff));
 	rect.y += rect.h;
 	rect.h = 1;
-	SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, 0x1a, 0x1a, 0x1a));
+	SDL_FillRect(surface, &rect, SDL_MapRGBA(surface->format, 0x1a, 0x1a, 0x1a, 0xff));
 }
 
 void render_clock(int maxsteps, int step) {
@@ -269,8 +273,11 @@ void render_clock(int maxsteps, int step) {
 		render_digits(screen, &minBackground, buffer, buffer2, maxsteps, step);
 	}
 
-	// flip backbuffer
-	SDL_Flip(screen);
+	// update screen with pixels
+	SDL_UpdateTexture(texture, NULL, screen->pixels, screen->pitch);
+	SDL_RenderClear(renderer);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 
 	if(step == maxsteps-1) {
 		past_h = _time->tm_hour;
@@ -326,7 +333,6 @@ Uint32 update_time(Uint32 interval, void *param) {
 
 int main(int argc, char** argv ) {
 	char *wid_env;
-	static char sdlwid[100];
 	double display_scale_factor = 1;
 
 	Uint32 wid = 0;
@@ -395,8 +401,6 @@ int main(int argc, char** argv ) {
 		if ((display = XOpenDisplay(NULL)) != NULL) { /* Use the default display */
 			XGetWindowAttributes(display, (Window) wid, &windowAttributes);
 			XCloseDisplay(display);
-			snprintf(sdlwid, 100, "SDL_WINDOWID=0x%X", wid);
-			putenv(sdlwid); /* Tell SDL to use this window */
 			width = windowAttributes.width;
 			height = windowAttributes.height;
 		}
@@ -409,13 +413,20 @@ int main(int argc, char** argv ) {
 	atexit(SDL_Quit);
 
 	if(fullscreen && (!wid)) {
-		screen = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+		window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
+				SDL_WINDOWPOS_UNDEFINED, 0, 0, SDL_WINDOW_FULLSCREEN);
+	} else if(!wid) {
+		window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
+				SDL_WINDOWPOS_UNDEFINED, width, height, 0);
 	} else {
-		screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+		window = SDL_CreateWindowFrom((void *)(Window)wid);
+		if(fullscreen) {
+			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
 	}
 
-	if (!screen) {
-		fprintf(stderr, "Unable to set video mode: %s\n", SDL_GetError());
+	if (!window) {
+		fprintf(stderr, "Unable to create window: %s\n", SDL_GetError());
 		return 1;
 	}
 
@@ -423,7 +434,9 @@ int main(int argc, char** argv ) {
 		SDL_ShowCursor(SDL_DISABLE);
 	}
 
-	SDL_WM_SetCaption(TITLE, TITLE);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+	screen = SDL_CreateRGBSurface(0, width, height, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
 
 	width = screen->w * display_scale_factor;
 	height = screen->h * display_scale_factor;
@@ -440,7 +453,7 @@ int main(int argc, char** argv ) {
 	}
 
 	// clear screen
-	SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0, 0, 0));
+	SDL_FillRect(screen, 0, SDL_MapRGBA(screen->format, 0, 0, 0, 0xff));
 
 	// calculate box coordinates
 	int rectsize;
@@ -492,7 +505,7 @@ int main(int argc, char** argv ) {
 	bgrect.y = 0;
 	bgrect.w = rectsize;
 	bgrect.h = rectsize;
-	bg = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA, rectsize, rectsize, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+	bg = SDL_CreateRGBSurface(0, rectsize, rectsize, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
 	fill_rounded_box_b(bg, &bgrect, radius, BACKGROUND_COLOR);
 
 	// draw current time

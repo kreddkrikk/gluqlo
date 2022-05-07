@@ -1,7 +1,7 @@
 CC=g++
 FONTDIR=$(DESTDIR)/usr/share/gluqlo
-CFLAGS=-Wall -o gluqlo gluqlo.c `sdl-config --libs --cflags` -DFONT='"$(FONTDIR)/gluqlo.ttf"'
-LDFLAGS=-lX11 -lSDL_ttf -lSDL_gfx
+CFLAGS=-Wall -o gluqlo gluqlo.c `sdl2-config --libs --cflags` -DFONT='"$(FONTDIR)/gluqlo.ttf"'
+LDFLAGS=-lX11 -lSDL2_ttf -lSDL2_gfx
 
 all: gluqlo
 
