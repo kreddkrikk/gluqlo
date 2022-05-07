@@ -519,42 +519,45 @@ int main(int argc, char** argv ) {
 	int mouse_x = -1;
 	int mouse_y = -1;	
 
-	while(!done && SDL_WaitEvent(&event)) {
-		switch(event.type) {
-			case SDL_USEREVENT:
-				render_animation();
-				break;
-			case SDL_KEYDOWN:
-				if(anykeyclose){
-					done = true;
+	while(!done) {
+		while(SDL_PollEvent(&event)) {
+			switch(event.type) {
+				case SDL_USEREVENT:
+					render_animation();
 					break;
-				}
-				switch(event.key.keysym.sym) {
-					case SDLK_ESCAPE:
-					case SDLK_q:
+				case SDL_KEYDOWN:
+					if(anykeyclose){
 						done = true;
 						break;
-					default:
-						break;
-				}
-				break;
+					}
+					switch(event.key.keysym.sym) {
+						case SDLK_ESCAPE:
+						case SDLK_q:
+							done = true;
+							break;
+						default:
+							break;
+					}
+					break;
 
-			case SDL_MOUSEMOTION:
-				if ( (mouse_x == -1) || (mouse_y == -1) ) //lifehack
+				case SDL_MOUSEMOTION:
+					if ( (mouse_x == -1) || (mouse_y == -1) ) //lifehack
 					{
 						mouse_x = event.motion.x;
 						mouse_y = event.motion.y;
 
 					}
 
-				if(((mouse_x != event.motion.x) || (mouse_y != event.motion.y)) && anykeyclose)
-					done = true;
-				break;
+					if(((mouse_x != event.motion.x) || (mouse_y != event.motion.y)) && anykeyclose)
+						done = true;
+					break;
 
-			case SDL_QUIT:
-				done = true;
-				break;
+				case SDL_QUIT:
+					done = true;
+					break;
+			}
 		}
+		SDL_Delay(1);
 	}
 
 	SDL_RemoveTimer(timer);
