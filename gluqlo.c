@@ -403,6 +403,7 @@ int main(int argc, char** argv ) {
 			XCloseDisplay(display);
 			width = windowAttributes.width;
 			height = windowAttributes.height;
+			fullscreen = windowAttributes.override_redirect;
 		}
 	}
 
@@ -412,12 +413,15 @@ int main(int argc, char** argv ) {
 	}
 	atexit(SDL_Quit);
 
-	if(fullscreen && (!wid)) {
-		window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
-				SDL_WINDOWPOS_UNDEFINED, 0, 0, SDL_WINDOW_FULLSCREEN);
-	} else if(!wid) {
-		window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
-				SDL_WINDOWPOS_UNDEFINED, width, height, 0);
+	if(!wid) {
+		if(!fullscreen) {
+			window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
+					SDL_WINDOWPOS_UNDEFINED, width, height, 0);
+		}
+		else {
+			window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED,
+					SDL_WINDOWPOS_UNDEFINED, 0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
 	} else {
 		window = SDL_CreateWindowFrom((void *)(Window)wid);
 		if(fullscreen) {
