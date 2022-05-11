@@ -572,5 +572,11 @@ int main(int argc, char** argv ) {
 	TTF_CloseFont(font_time);
 	TTF_CloseFont(font_mode);
 
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+
+    SDL_Quit();
+
 	return 0;
 }
