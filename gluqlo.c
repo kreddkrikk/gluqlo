@@ -561,7 +561,7 @@ int main(int argc, char** argv ) {
 					break;
 			}
 		}
-		SDL_Delay(1);
+		SDL_Delay(100);
 	}
 
 	SDL_RemoveTimer(timer);
