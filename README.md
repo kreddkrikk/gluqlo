@@ -1,6 +1,6 @@
 ﻿# Gluqlo: Fliqlo for Linux (SDL2)
 
-Fork of Gluqlo with SDL2 support. Be sure to set the environment variable `SDL_VIDEO_ALLOW_SCREENSAVER=1` before starting the screensaver background daemon (xscreensaver, etc.).
+Fork of Gluqlo with SDL2 support. Be sure to set the environment variable `SDL_VIDEO_ALLOW_SCREENSAVER=1` before starting the screensaver background daemon (xscreensaver, etc.). To avoid staggering while the screensaver is running set the **Cycle After** option in `xscreensaver-settings` to 0 minutes.
 
 ## Background
 
