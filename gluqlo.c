@@ -47,6 +47,9 @@ int past_h = -1, past_m = -1;
 
 int width = DEFAULT_WIDTH;
 int height = DEFAULT_HEIGHT;
+int sethour = 0;
+int setmin = 0;
+bool settime = false;
 
 TTF_Font *font_time = NULL;
 TTF_Font *font_mode = NULL;
@@ -143,7 +146,7 @@ void render_ampm(SDL_Surface *surface, SDL_Rect *rect, int pm) {
 
 void blit_digits(SDL_Surface *surface, SDL_Rect *rect, int spc, char digits[], SDL_Color color) {
 	int min_x, max_x, min_y, max_y, advance;
-	int adjust_x = (digits[0] == '1') ? 6 * spc : 0; // special case
+	int adjust_x = (digits[0] == '1') ? 2.5 * spc : 0; // special case
 	int center_x = rect->x + rect->w / 2 - adjust_x;
 
 	SDL_Surface *glyph;
@@ -153,7 +156,7 @@ void blit_digits(SDL_Surface *surface, SDL_Rect *rect, int spc, char digits[], S
 		// first digit
 		TTF_GlyphMetrics(font_time, digits[0], &min_x, &max_x, &min_y, &max_y, &advance);
 		glyph = TTF_RenderGlyph_Blended(font_time, digits[0], color);
-		coords.x = center_x - max_x + min_x - spc - (adjust_x ? spc : 0);
+		coords.x = center_x - max_x + min_x - spc - (adjust_x * 2);
 		coords.y = rect->y + (rect->h - glyph->h) / 2;
 		SDL_BlitSurface(glyph, 0, surface, &coords);
 		SDL_FreeSurface(glyph);
@@ -161,7 +164,7 @@ void blit_digits(SDL_Surface *surface, SDL_Rect *rect, int spc, char digits[], S
 		TTF_GlyphMetrics(font_time, digits[1], &min_x, &max_x, &min_y, &max_y, &advance);
 		glyph = TTF_RenderGlyph_Blended(font_time, digits[1], color);
 		coords.y = rect->y + (rect->h - glyph->h) / 2;
-		coords.x = center_x + spc / 2 + (adjust_x / 2);
+		coords.x = center_x + spc / 2;
 		SDL_BlitSurface(glyph, 0, surface, &coords);
 		SDL_FreeSurface(glyph);
 	} else {
@@ -247,13 +250,22 @@ void render_clock(int maxsteps, int step) {
 	char buffer[3], buffer2[3];
 	struct tm *_time;
 	time_t rawtime;
+    int hour, minute;
 
 	time(&rawtime);
 	_time = localtime(&rawtime);
+    if (settime) {
+        hour = sethour;
+        minute = setmin;
+    }
+    else {
+        hour = _time->tm_hour;
+        minute = _time->tm_min;
+    }
 
 	// draw hours
-	if(_time->tm_hour != past_h) {
-		int h = twentyfourh ? _time->tm_hour : (_time->tm_hour + 11) % 12 + 1;
+	if(hour != past_h) {
+		int h = twentyfourh ? hour : (hour + 11) % 12 + 1;
 		if(leadingzero) {
 			snprintf(buffer, 3, "%02d", h);
 			snprintf(buffer2, 3, "%02d", past_h);
@@ -263,12 +275,12 @@ void render_clock(int maxsteps, int step) {
 		}
 		render_digits(screen, &hourBackground, buffer, buffer2, maxsteps, step);
 		// draw am/pm
-		if(!twentyfourh) render_ampm(screen, &hourBackground, _time->tm_hour >= 12);
+		if(!twentyfourh) render_ampm(screen, &hourBackground, hour >= 12);
 	}
 
 	// draw minutes
-	if(_time->tm_min != past_m) {
-		snprintf(buffer, 3, "%02d", _time->tm_min);
+	if(minute != past_m) {
+		snprintf(buffer, 3, "%02d", minute);
 		snprintf(buffer2, 3, "%02d", past_m);
 		render_digits(screen, &minBackground, buffer, buffer2, maxsteps, step);
 	}
@@ -280,8 +292,8 @@ void render_clock(int maxsteps, int step) {
 	SDL_RenderPresent(renderer);
 
 	if(step == maxsteps-1) {
-		past_h = _time->tm_hour;
-		past_m = _time->tm_min;
+		past_h = hour;
+		past_m = minute;
 	}
 }
 
@@ -313,11 +325,13 @@ Uint32 update_time(Uint32 interval, void *param) {
 	SDL_Event e;
 	time_t rawtime;
 	struct tm *time_i;
+    int minute;
 
 	time(&rawtime);
 	time_i = localtime(&rawtime);
+    minute = settime ? setmin : time_i->tm_min;
 
-	if(time_i->tm_min != past_m) {
+	if(minute != past_m) {
 		e.type = SDL_USEREVENT;
 		e.user.code = 0;
 		e.user.data1 = NULL;
@@ -379,10 +393,18 @@ int main(int argc, char** argv ) {
 		} else if(strcmp("-s", argv[i]) == 0) {
 			display_scale_factor = atof(argv[i+1]);
 			i++;
-		} else if(strcmp("-window-id", argv[i]) == 0) {
+		} else if(strcmp("-window-id", argv[i]) == 0 || strcmp("--window-id", argv[i]) == 0) {
 			wid = strtol(argv[i+1], (char **) NULL, 0);
 			i++;
-		} else {
+		} else if (strcmp("-time", argv[i]) == 0) {
+            char *time = argv[i+1];
+            char *val = strtok(time, ":");
+            sethour = atoi(val);
+            val = strtok(NULL, ":");
+            setmin = atoi(val);
+            settime = true;
+            i++;
+        } else {
 			printf("Invalid option -- %s\n", argv[i]);
 			printf("Try --help for more information.\n");
 			return 0;
