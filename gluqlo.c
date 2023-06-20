@@ -379,7 +379,7 @@ int main(int argc, char** argv ) {
 		} else if(strcmp("-s", argv[i]) == 0) {
 			display_scale_factor = atof(argv[i+1]);
 			i++;
-		} else if(strcmp("-window-id", argv[i]) == 0) {
+		} else if(strcmp("-window-id", argv[i]) == 0 || strcmp("--window-id", argv[i]) == 0) {
 			wid = strtol(argv[i+1], (char **) NULL, 0);
 			i++;
 		} else {
