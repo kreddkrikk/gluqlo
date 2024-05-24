@@ -367,7 +367,7 @@ int main(int argc, char** argv ) {
 			printf("  -r\t\tCustom resolution in WxH format\n");
 			printf("  -s\t\tCustom display scale factor\n");
 			return 0;
-		} else if(strcmp("-root", argv[i]) == 0 || strcmp("-f", argv[i]) == 0 || strcmp("--fullscreen", argv[i]) == 0) {
+		} else if(strcmp("-root", argv[i]) == 0 || strcmp("-f", argv[i]) == 0 || strcmp("--root", argv[i]) == 0) {
 			fullscreen = true;
 		} else if(strcmp("-noflip", argv[i]) == 0) {
 			animate = false;
@@ -410,7 +410,9 @@ int main(int argc, char** argv ) {
 			return 0;
 		}
 	}
-
+	/* Fix SDL from inhibit screensaver */
+	putenv("SDL_VIDEO_ALLOW_SCREENSAVER=1");
+	
 	/* If no window argument, check environment */
 	if(wid == 0) {
 		if ((wid_env = getenv("XSCREENSAVER_WINDOW")) != NULL ) {
